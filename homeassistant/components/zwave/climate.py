@@ -451,7 +451,7 @@ class ZWaveClimate(ZWaveDeviceEntity, ClimateDevice):
             return
         operation_mode = self._hvac_mapping.get(hvac_mode)
         _LOGGER.debug("Set operation_mode to %s", operation_mode)
-        self.values.mode.data = operation_mode
+        self.update_mode(operation_mode)
 
     def turn_aux_heat_on(self):
         """Turn auxillary heater on."""
@@ -459,7 +459,7 @@ class ZWaveClimate(ZWaveDeviceEntity, ClimateDevice):
             return
         operation_mode = AUX_HEAT_ZWAVE_MODE
         _LOGGER.debug("Aux heat on. Set operation mode to %s", operation_mode)
-        self.values.mode.data = operation_mode
+        self.update_mode(operation_mode)
 
     def turn_aux_heat_off(self):
         """Turn auxillary heater off."""
@@ -470,7 +470,7 @@ class ZWaveClimate(ZWaveDeviceEntity, ClimateDevice):
         else:
             operation_mode = self._hvac_mapping.get(HVAC_MODE_OFF)
         _LOGGER.debug("Aux heat off. Set operation mode to %s", operation_mode)
-        self.values.mode.data = operation_mode
+        self.update_mode(operation_mode)
 
     def set_preset_mode(self, preset_mode):
         """Set new target preset mode."""
@@ -482,11 +482,11 @@ class ZWaveClimate(ZWaveDeviceEntity, ClimateDevice):
             self._update_operation_mode()
             operation_mode = self._hvac_mapping.get(self.hvac_mode)
             _LOGGER.debug("Set operation_mode to %s", operation_mode)
-            self.values.mode.data = operation_mode
+            self.update_mode(operation_mode)
         else:
             operation_mode = self._preset_mapping.get(preset_mode, preset_mode)
             _LOGGER.debug("Set operation_mode to %s", operation_mode)
-            self.values.mode.data = operation_mode
+            self.update_mode(operation_mode)
 
     def set_swing_mode(self, swing_mode):
         """Set new target swing mode."""
@@ -494,6 +494,11 @@ class ZWaveClimate(ZWaveDeviceEntity, ClimateDevice):
         if self._zxt_120 == 1:
             if self.values.zxt_120_swing_mode:
                 self.values.zxt_120_swing_mode.data = swing_mode
+
+    def update_mode(self, operation_mode):
+        """Update the operation mode only if it is not already set."""
+        if self.values.mode.data != operation_mode:
+            self.values.mode.data == operation_mode
 
     @property
     def device_state_attributes(self):
