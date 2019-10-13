@@ -7,7 +7,7 @@ from pybotvac import Account, Neato, Vorwerk
 from pybotvac.exceptions import NeatoException, NeatoLoginException, NeatoRobotException
 import voluptuous as vol
 
-from homeassistant.config_entries import SOURCE_IMPORT
+from homeassistant.config_entries import SOURCE_IMPORT, SOURCE_USER
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import Throttle
@@ -44,11 +44,29 @@ CONFIG_SCHEMA = vol.Schema(
 async def async_setup(hass, config):
     """Set up the Neato component."""
 
+    entries = hass.config_entries.async_entries(NEATO_DOMAIN)
+    # TODO: Test these new cases
     if NEATO_DOMAIN not in config:
         # There is an entry and nothing in configuration.yaml
+        if entries:
+            # If credentials are wrong, ask the user for new ones
+            entry = entries[0]
+            error = await hass.async_add_executor_job(
+                NeatoConfigFlow.try_login,
+                entry.data[CONF_USERNAME],
+                entry.data[CONF_PASSWORD],
+                entry.data[CONF_VENDOR],
+            )
+            # TODO: Unfortunately this doesn't work
+            if error == "invalid_credentials":
+                hass.async_create_task(
+                    hass.config_entries.flow.async_init(
+                        NEATO_DOMAIN, context={"source": SOURCE_USER}, data={}
+                    )
+                )
+                return False
         return True
 
-    entries = hass.config_entries.async_entries(NEATO_DOMAIN)
     hass.data[NEATO_CONFIG] = config[NEATO_DOMAIN]
 
     if entries:
