@@ -17,6 +17,12 @@ DEFAULT_VENDOR = "neato"
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_SCHEMA_USER = {
+    vol.Required(CONF_USERNAME): str,
+    vol.Required(CONF_PASSWORD): str,
+    vol.Optional(CONF_VENDOR, default="neato"): vol.In(VALID_VENDORS),
+}
+
 
 class NeatoConfigFlow(config_entries.ConfigFlow, domain=NEATO_DOMAIN):
     """Neato integration config flow."""
@@ -33,8 +39,23 @@ class NeatoConfigFlow(config_entries.ConfigFlow, domain=NEATO_DOMAIN):
     async def async_step_user(self, user_input=None):
         """Handle a flow initialized by the user."""
         errors = {}
+        entries = self._async_current_entries()
+        if entries:
+            entry = entries[0]
+            error = await self.hass.async_add_executor_job(
+                self.try_login,
+                entry.data[CONF_USERNAME],
+                entry.data[CONF_PASSWORD],
+                entry.data[CONF_VENDOR],
+            )
+            if error == "invalid_credentials":
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=vol.Schema(CONF_SCHEMA_USER),
+                    description_placeholders={"docs_url": DOCS_URL},
+                    errors=errors,
+                )
 
-        if self._async_current_entries():
             return self.async_abort(reason="already_configured")
 
         if user_input is not None:
@@ -56,13 +77,7 @@ class NeatoConfigFlow(config_entries.ConfigFlow, domain=NEATO_DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_USERNAME): str,
-                    vol.Required(CONF_PASSWORD): str,
-                    vol.Optional(CONF_VENDOR, default="neato"): vol.In(VALID_VENDORS),
-                }
-            ),
+            data_schema=vol.Schema(CONF_SCHEMA_USER),
             description_placeholders={"docs_url": DOCS_URL},
             errors=errors,
         )
