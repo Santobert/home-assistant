@@ -41,21 +41,13 @@ class NeatoConfigFlow(config_entries.ConfigFlow, domain=NEATO_DOMAIN):
         errors = {}
         entries = self._async_current_entries()
         if entries:
-            entry = entries[0]
-            error = await self.hass.async_add_executor_job(
-                self.try_login,
-                entry.data[CONF_USERNAME],
-                entry.data[CONF_PASSWORD],
-                entry.data[CONF_VENDOR],
-            )
-            if error == "invalid_credentials":
+            if "error" in user_input and user_input["error"] == "invalid_credentials":
                 return self.async_show_form(
                     step_id="user",
                     data_schema=vol.Schema(CONF_SCHEMA_USER),
                     description_placeholders={"docs_url": DOCS_URL},
                     errors=errors,
                 )
-
             return self.async_abort(reason="already_configured")
 
         if user_input is not None:

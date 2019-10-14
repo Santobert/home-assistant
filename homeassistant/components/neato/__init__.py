@@ -57,11 +57,13 @@ async def async_setup(hass, config):
                 entry.data[CONF_PASSWORD],
                 entry.data[CONF_VENDOR],
             )
-            # TODO: Unfortunately this doesn't work
+
             if error == "invalid_credentials":
                 hass.async_create_task(
                     hass.config_entries.flow.async_init(
-                        NEATO_DOMAIN, context={"source": SOURCE_USER}, data={}
+                        NEATO_DOMAIN,
+                        context={"source": SOURCE_USER},
+                        data={"error": error},
                     )
                 )
                 return False
