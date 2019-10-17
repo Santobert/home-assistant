@@ -48,25 +48,6 @@ async def async_setup(hass, config):
     # TODO: Test these new cases
     if NEATO_DOMAIN not in config:
         # There is an entry and nothing in configuration.yaml
-        if entries:
-            # If credentials are wrong, ask the user for new ones
-            entry = entries[0]
-            error = await hass.async_add_executor_job(
-                NeatoConfigFlow.try_login,
-                entry.data[CONF_USERNAME],
-                entry.data[CONF_PASSWORD],
-                entry.data[CONF_VENDOR],
-            )
-
-            if error == "invalid_credentials":
-                hass.async_create_task(
-                    hass.config_entries.flow.async_init(
-                        NEATO_DOMAIN,
-                        context={"source": SOURCE_USER},
-                        data={"error": error},
-                    )
-                )
-                return False
         return True
 
     hass.data[NEATO_CONFIG] = config[NEATO_DOMAIN]
@@ -117,6 +98,11 @@ async def async_setup_entry(hass, entry):
     await hass.async_add_executor_job(hub.login)
     if not hub.logged_in:
         _LOGGER.debug("Failed to login to Neato API")
+        hass.async_create_task(
+            hass.config_entries.flow.async_init(
+                NEATO_DOMAIN, context={"source": SOURCE_USER}
+            )
+        )
         return False
 
     try:
